@@ -197,3 +197,76 @@ IshodnMass: 0 1 1 2 3 5 8 13 21 34 55 89 144
 Element 55 found on position 10
 
 
+Экспоненциальный поиск, рабочий код:
+
+#include <iostream>
+#include <vector>
+
+// Экспоненциальный поиск в отсортированном массиве
+int exponentialSearch(const std::vector<int>& arr, int target) {
+    int n = arr.size();
+
+    // Если массив пустой или первый элемент больше искомого, элемент не найден
+    if (n == 0 || arr[0] > target) {
+        return -1;
+    }
+
+    // Ищем диапазон, в котором может находиться элемент
+    int bound = 1; // Начальный диапазон поиска
+    while (bound < n && arr[bound] <= target) {
+        bound *= 2; // Удваиваем диапазон поиска
+    }
+
+    // Теперь используем бинарный поиск в найденном диапазоне
+    int start = bound / 2; // Левая граница диапазона
+    int end = std::min(bound, n - 1); // Правая граница диапазона
+
+    // Классический бинарный поиск в диапазоне
+    while (start <= end) {
+        int mid = start + (end - start) / 2;
+
+        if (arr[mid] == target) {
+            return mid; // Элемент найден
+        } else if (arr[mid] < target) {
+            start = mid + 1; // Искать в правой половине
+        } else {
+            end = mid - 1; // Искать в левой половине
+        }
+    }
+
+    // Если элемент не найден
+    return -1;
+}
+
+// Функция для вывода массива
+void printArray(const std::vector<int>& arr) {
+    for (int val : arr) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+}
+
+// Главная функция
+int main() {
+    std::vector<int> arr = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47};
+    int target = 23; // Искомое значение
+
+    std::cout << "Исходный массив: ";
+    printArray(arr); // Выводим исходный массив
+
+    // Вызываем функцию экспоненциального поиска
+    int result = exponentialSearch(arr, target);
+
+    // Выводим результат
+    if (result != -1) {
+        std::cout << "Элемент " << target << " найден на позиции " << result << std::endl;
+    } else {
+        std::cout << "Элемент " << target << " не найден в массиве." << std::endl;
+    }
+
+    return 0;
+}
+
+Результат работы программы:
+IshodnMass: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47
+Element 23 Found on position 8
