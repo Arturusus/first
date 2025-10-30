@@ -132,3 +132,68 @@ IshodnMass: 5 3 1 7 4 6 9 2
 SortedMass: 1 2 3 4 5 6 7 9
 
 
+Поиск Скачками, рабочий код:
+#include <iostream>
+#include <cmath> // Для sqrt()
+
+// Функция для поиска скачками
+int jumpSearch(int arr[], int size, int target) {
+    // Шаг прыжков (примерно квадратный корень из размера массива)
+    int step = static_cast<int>(std::sqrt(size));
+
+    // Начальная позиция поиска
+    int prev = 0;
+
+    // Находим блок, в котором находится искомый элемент
+    while (prev < size && arr[std::min(step, size) - 1] < target) {
+        prev = step;        // Идём на следующий блок
+        step += static_cast<int>(std::sqrt(size)); // Увеличим шаг на корень
+    }
+
+    // Линейный поиск в найденном блоке
+    for (int i = prev; i < std::min(step, size); i++) {
+        if (arr[i] == target) {
+            return i; // Вернём индекс найденного элемента
+        }
+    }
+
+    // Если элемент не найден
+    return -1;
+}
+
+// Функция для вывода массива
+void printArray(int arr[], int size) {
+    for (int i = 0; i < size; i++) {
+        std::cout << arr[i] << " ";
+    }
+    std::cout << std::endl;
+}
+
+// Главная функция
+int main() {
+    // Пример отсортированного массива
+    int arr[] = {0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144};
+    int size = sizeof(arr) / sizeof(arr[0]); // Вычисляем размер массива
+    int target = 55; // Искомое значение
+
+    std::cout << "Исходный массив: ";
+    printArray(arr, size); // Выводим исходный массив
+
+    // Вызываем функцию поиска скачками
+    int result = jumpSearch(arr, size, target);
+
+    // Выводим результат
+    if (result != -1) {
+        std::cout << "Элемент " << target << " найден на позиции " << result << std::endl;
+    } else {
+        std::cout << "Элемент " << target << " не найден в массиве." << std::endl;
+    }
+
+    return 0;
+}
+
+Результат работы программы:
+IshodnMass: 0 1 1 2 3 5 8 13 21 34 55 89 144
+Element 55 found on position 10
+
+
