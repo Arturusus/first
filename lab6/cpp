@@ -1,0 +1,99 @@
+Работоспособный код на C++:
+
+#include <iostream>
+#include <random>
+#include <chrono>
+#include <cmath>
+
+// Целевая функция (Energy Function)
+double objective_function(double x, double y) {
+    return pow(x * x + y * y - 25, 2) + pow(x + y - 7, 2);
+}
+
+// Функция для случайного числа в диапазоне [lower, upper]
+double rand_in_range(double lower, double upper) {
+    static std::default_random_engine generator(static_cast<long unsigned int>(
+        std::chrono::steady_clock::now().time_since_epoch().count())
+    );
+    std::uniform_real_distribution<double> distribution(lower, upper);
+    return distribution(generator);
+}
+
+// Реализация функции clamp
+template <typename T>
+T clamp(T value, T min, T max) {
+    return std::min(std::max(value, min), max);
+}
+
+// Функция имитации отжига
+void simulated_annealing(double init_temp, double cooling_factor, int steps) {
+    // Начальное случайное решение
+    double x = rand_in_range(-10, 10);
+    double y = rand_in_range(-10, 10);
+
+    double current_energy = objective_function(x, y);
+    double best_x = x, best_y = y;
+    double best_energy = current_energy;
+
+    double temperature = init_temp;
+
+    for (int iteration = 0; iteration < steps; ++iteration) {
+        // Новое предложение решения (маленькие случайные возмущения)
+        double dx = rand_in_range(-1, 1);
+        double dy = rand_in_range(-1, 1);
+        double candidate_x = x + dx;
+        double candidate_y = y + dy;
+
+        // Ограничиваем кандидат в рамках [-10, 10]
+        candidate_x = clamp(candidate_x, -10., 10.);
+        candidate_y = clamp(candidate_y, -10., 10.);
+
+        double candidate_energy = objective_function(candidate_x, candidate_y);
+
+        // Если новое решение лучше, принимаем его
+        if (candidate_energy < current_energy) {
+            x = candidate_x;
+            y = candidate_y;
+            current_energy = candidate_energy;
+
+            // Обновляем лучшее решение
+            if (candidate_energy < best_energy) {
+                best_x = x;
+                best_y = y;
+                best_energy = candidate_energy;
+            }
+        } else {
+            // Вероятностное принятие плохого решения
+            double probability = exp(-(candidate_energy - current_energy) / temperature);
+            if (rand_in_range(0, 1) < probability) {
+                x = candidate_x;
+                y = candidate_y;
+                current_energy = candidate_energy;
+            }
+        }
+
+        // Охлаждение температуры
+        temperature *= cooling_factor;
+    }
+
+    std::cout << "Decision:" << std::endl;
+    std::cout << "x = " << best_x << ", y = " << best_y << std::endl;
+    std::cout << "the value of the objective function: " << best_energy << std::endl;
+}
+
+int main() {
+    // Настройки имитации отжига
+    double initial_temperature = 1000.; // Начальная температура
+    double cooling_factor = 0.99; // Коэффициент охлаждения
+    int iterations = 10000; // Количество итераций
+
+    // Запускаем имитацию отжига
+    simulated_annealing(initial_temperature, cooling_factor, iterations);
+
+    return 0;
+}
+
+Результат работы программы:
+Decision:
+x = 3.96537, y = 3.0437
+the value of the objective function: 0.000220579
