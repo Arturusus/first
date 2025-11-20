@@ -1,49 +1,25 @@
-Работоспособный код на языке программирования Python:
+Работоспособный дополненный код на Python с ручным вводом:
 
-def greedy_vertex_cover(edges):
-    # Создаем множество всех вершин
-    vertices = set()
-    for u, v in edges:
-        vertices.add(u)
-        vertices.add(v)
+def min_coins(coins, S):
+    coins.sort(reverse=True)
+    count = 0
+    for coin in coins:
+        num_coins = S // coin
+        count += num_coins
+        S -= num_coins * coin
+    return count
 
-    # Создаем множество для вершинного покрытия
-    cover = set()
+# Ввод данных
+coins = list(map(int, input("Введите номиналы монет через пробел: ").split()))
+S = int(input("Введите сумму для размена: "))
 
-    # Пока есть ребра, которые не покрыты
-    while edges:
-        # Находим ребро с максимальной степенью (количество непокрытых вершин)
-        max_degree = -1
-        best_vertex = None
-        for u, v in edges:
-            degree_u = sum(1 for edge in edges if u in edge)
-            degree_v = sum(1 for edge in edges if v in edge)
-            if degree_u > max_degree:
-                max_degree = degree_u
-                best_vertex = u
-            if degree_v > max_degree:
-                max_degree = degree_v
-                best_vertex = v
+result = min_coins(coins, S)
 
-        # Добавляем вершину с максимальной степенью в покрытие
-        cover.add(best_vertex)
-
-        # Удаляем все ребра, которые теперь покрыты
-        edges = [(u, v) for u, v in edges if u != best_vertex and v != best_vertex]
-
-    return cover
-
-# Входные данные
-edges = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 0)]
-
-# Запускаем алгоритм
-cover = greedy_vertex_cover(edges)
-
-# Выводим результат
-print("Размер покрытия:", len(cover))
-
+print("Минимальное количество монет:", result)
 
 Результат работы программы:
-Размер покрытия: 5
-Вершинное покрытие: {0, 2, 4, 6, 8}
-print("Вершинное покрытие:", cover)
+    Введенные данные:
+        Введите номиналы монет через пробел: 1 5 10 25
+        Введите сумму для размена: 63
+    Выведенные:
+        Минимальное количество монет: 6
