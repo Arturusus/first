@@ -1,28 +1,46 @@
 Пример работоспособного кода на языке программирования Python:
 
 import numpy as np
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.datasets import mnist
+import matplotlib.pyplot as plt
 
+# Загрузка данных MNIST
+(X_train_full, y_train_full), (_, _) = mnist.load_data()
+
+# Предварительная обработка данных
+X_train_flat = X_train_full.reshape(-1, 784) / 255.0  # Приведение пикселей к диапазону [0, 1]
+y_train_one_hot = np.eye(10)[y_train_full]           # One-hot encoding меток
+
+# Разделение на обучающую и тестовую выборки
+X_train, X_val, y_train, y_val = train_test_split(X_train_flat, y_train_one_hot, test_size=0.2, random_state=42)
+
+# Класс нашей нейронной сети
 class DigitClassifier:
     def __init__(self):
-        # Инициализация весов и смещений
-        self.W1 = np.random.randn(784, 128) * np.sqrt(2 / 784)  # Xavier initialization
+        # Инициализация весов и смещений (метод Xavier initialization)
+        self.W1 = np.random.randn(784, 128) * np.sqrt(2 / 784)
         self.b1 = np.zeros((1, 128))
         self.W2 = np.random.randn(128, 64) * np.sqrt(2 / 128)
         self.b2 = np.zeros((1, 64))
         self.W3 = np.random.randn(64, 10) * np.sqrt(2 / 64)
         self.b3 = np.zeros((1, 10))
-    
+
     def relu(self, x):
+        """Реализация функции активации ReLU."""
         return np.maximum(x, 0)
-    
+
     def d_relu(self, x):
+        """Производная функции ReLU."""
         return (x > 0).astype(float)
-    
+
     def softmax(self, x):
-        exp_x = np.exp(x - np.max(x))  # стабилизируем экспоненту, предотвращаем overflow
+        """Реализация функции Softmax."""
+        exp_x = np.exp(x - np.max(x))  # Устойчивый расчет экспоненты
         return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
-    
+
     def forward(self, X):
+        """Прямое распространение через сеть."""
         Z1 = np.dot(X, self.W1) + self.b1
         A1 = self.relu(Z1)
         Z2 = np.dot(A1, self.W2) + self.b2
@@ -30,30 +48,23 @@ class DigitClassifier:
         Z3 = np.dot(A2, self.W3) + self.b3
         output = self.softmax(Z3)
         return output, Z1, A1, Z2, A2
-    
+
     def backward(self, X, y, output, Z1, A1, Z2, A2):
+        """Обратное распространение для расчета градиентов."""
         m = len(y)
-        
-        # Производная Loss w.r.t. выходной слой
         delta_output = output - y
-        
-        # Обратный проход третьего слоя
         grad_W3 = np.dot(A2.T, delta_output) / m
         grad_b3 = np.sum(delta_output, axis=0, keepdims=True) / m
-        
-        # Обратное распространение второго слоя
         delta_2 = np.dot(delta_output, self.W3.T) * self.d_relu(Z2)
         grad_W2 = np.dot(A1.T, delta_2) / m
         grad_b2 = np.sum(delta_2, axis=0, keepdims=True) / m
-        
-        # Обратное распространение первого слоя
         delta_1 = np.dot(delta_2, self.W2.T) * self.d_relu(Z1)
         grad_W1 = np.dot(X.T, delta_1) / m
         grad_b1 = np.sum(delta_1, axis=0, keepdims=True) / m
-        
         return grad_W1, grad_b1, grad_W2, grad_b2, grad_W3, grad_b3
-    
+
     def update_weights(self, grads, lr):
+        """Обновление весов и смещений."""
         grad_W1, grad_b1, grad_W2, grad_b2, grad_W3, grad_b3 = grads
         self.W1 -= lr * grad_W1
         self.b1 -= lr * grad_b1
@@ -61,38 +72,66 @@ class DigitClassifier:
         self.b2 -= lr * grad_b2
         self.W3 -= lr * grad_W3
         self.b3 -= lr * grad_b3
-    
+
     def compute_loss(self, output, y):
+        """Вычисление кросс-энтропии."""
         epsilon = 1e-15
         logits_clipped = np.clip(output, epsilon, 1 - epsilon)
         loss = -np.mean(np.sum(y * np.log(logits_clipped), axis=1))
         return loss
-    
+
     def accuracy(self, outputs, labels):
+        """Подсчет точности классификации."""
         predicted_labels = np.argmax(outputs, axis=1)
         true_labels = np.argmax(labels, axis=1)
         correct_predictions = sum(predicted_labels == true_labels)
         total_samples = len(true_labels)
         acc = correct_predictions / total_samples
         return acc
-    
+
     def train(self, X_train, y_train, epochs=10, batch_size=32, learning_rate=0.01):
+        """Процесс обучения с графиками изменений потерь и точности."""
+        losses = []  # История потерь
+        accuracies = []  # История точности
+        
         for epoch in range(epochs):
             idx = np.arange(len(X_train))
             np.random.shuffle(idx)
-            
             batches = [(idx[i:i+batch_size]) for i in range(0, len(X_train), batch_size)]
             
             for batch_idx in batches:
                 X_batch = X_train[batch_idx]
                 y_batch = y_train[batch_idx]
-                
                 output, Z1, A1, Z2, A2 = self.forward(X_batch)
                 grads = self.backward(X_batch, y_batch, output, Z1, A1, Z2, A2)
                 self.update_weights(grads, learning_rate)
             
+            # Оцениваем потерю и точность на полном датасете
             output_train, _, _, _, _ = self.forward(X_train)
             train_acc = self.accuracy(output_train, y_train)
             train_loss = self.compute_loss(output_train, y_train)
+            losses.append(train_loss)
+            accuracies.append(train_acc)
             
             print(f'Epoch {epoch+1}/{epochs}, Train Accuracy: {train_acc:.4f}, Train Loss: {train_loss:.4f}')
+        
+        # Визуализация процессов обучения
+        plt.figure(figsize=(12, 4))
+        plt.subplot(1, 2, 1)
+        plt.plot(range(1, epochs+1), losses, label='Train Loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.title('Training Loss')
+        plt.legend()
+        
+        plt.subplot(1, 2, 2)
+        plt.plot(range(1, epochs+1), accuracies, label='Train Accuracy')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy')
+        plt.title('Training Accuracy')
+        plt.legend()
+        plt.show()
+
+# Создаем экземпляр класса и запускаем обучение
+model = DigitClassifier()
+model.train(X_train, y_train, epochs=10, batch_size=32, learning_rate=0.01)
